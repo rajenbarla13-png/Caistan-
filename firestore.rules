@@ -1,0 +1,286 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'rajenbarla13@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'plan', 'credits', 'role', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'photoURL', 'plan', 'planExpiresAt',
+          'credits', 'dailyProjectsUsed', 'dailyMinutesUsed', 'storageUsedMb',
+          'role', 'status', 'tutorialCompleted', 'tutorialStep',
+          'preferredLanguage', 'watermarkText', 'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 200
+        && data.displayName is string && data.displayName.size() <= 120
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.plan in ['FREE', 'STARTER', 'PRO', 'ULTIMATE', 'YEARLY']
+        && (!('planExpiresAt' in data) || data.planExpiresAt == null || (data.planExpiresAt is string && data.planExpiresAt.size() <= 64))
+        && data.credits is number && data.credits >= 0
+        && data.role in ['user', 'admin']
+        && data.status in ['active', 'suspended']
+        && (!('preferredLanguage' in data) || (data.preferredLanguage is string && data.preferredLanguage.size() <= 32))
+        && (!('watermarkText' in data) || (data.watermarkText is string && data.watermarkText.size() <= 80));
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'sourceType', 'videoUrl', 'durationSec', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'title', 'sourceType', 'videoUrl', 'fileName', 'durationSec', 'fileSizeMb',
+          'aspectRatio', 'language', 'status', 'transcript', 'viralSummary',
+          'hashtags', 'brollSuggestions', 'silenceRanges', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 180
+        && data.sourceType in ['upload', 'sample']
+        && data.videoUrl is string && data.videoUrl.size() <= 500
+        && data.durationSec is number && data.durationSec >= 0
+        && data.status in ['uploaded', 'processing', 'ready', 'failed']
+        && (!('transcript' in data) || (data.transcript is string && data.transcript.size() <= 20000))
+        && (!('viralSummary' in data) || (data.viralSummary is string && data.viralSummary.size() <= 1000))
+        && (!('hashtags' in data) || (data.hashtags is list && data.hashtags.size() <= 15))
+        && (!('brollSuggestions' in data) || (data.brollSuggestions is list && data.brollSuggestions.size() <= 10));
+    }
+
+    function isValidClip(data) {
+      return data.keys().hasAll(['id', 'projectId', 'userId', 'title', 'startSec', 'endSec', 'viralScore', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'projectId', 'userId', 'title', 'description', 'startSec', 'endSec',
+          'viralScore', 'reason', 'category', 'aspectRatio', 'captionTemplate', 'fontStyle',
+          'captionColor', 'captionBg', 'captionPosition', 'captionSize', 'silenceRemoved',
+          'autoZoom', 'audioEnhanced', 'noiseReduced', 'bgRemoved', 'musicTrack',
+          'filterName', 'watermarkEnabled', 'hashtags', 'captions', 'thumbnailUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 180
+        && data.startSec is number && data.startSec >= 0
+        && data.endSec is number && data.endSec >= data.startSec
+        && data.viralScore is number && data.viralScore >= 0 && data.viralScore <= 100
+        && (!('captions' in data) || (data.captions is list && data.captions.size() <= 300));
+    }
+
+    function isValidExport(data) {
+      return data.keys().hasAll(['id', 'userId', 'projectId', 'clipId', 'title', 'platform', 'resolution', 'status', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'projectId', 'clipId', 'title', 'platform', 'resolution', 'aspectRatio', 'fileUrl', 'fileSizeMb', 'status', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 180
+        && data.platform in ['YouTube Shorts', 'Instagram Reels', 'Facebook Reels', 'TikTok', 'WhatsApp Status']
+        && data.resolution in ['720p', '1080p', '4K']
+        && data.status in ['rendering', 'completed', 'failed'];
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll(['id', 'userId', 'plan', 'amountInr', 'upiApp', 'referenceId', 'status', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'userEmail', 'plan', 'amountInr', 'upiApp', 'referenceId', 'utrNumber', 'promoCode', 'upiUri', 'qrDataUrl', 'status', 'createdAt', 'verifiedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.plan in ['STARTER', 'PRO', 'ULTIMATE', 'YEARLY']
+        && data.amountInr is number && data.amountInr > 0
+        && data.upiApp in ['Google Pay', 'PhonePe', 'Paytm', 'Other UPI']
+        && data.referenceId is string && data.referenceId.size() <= 64
+        && data.status in ['pending', 'awaiting_verification', 'verified', 'rejected'];
+    }
+
+    function isValidTicket(data) {
+      return data.keys().hasAll(['id', 'userId', 'userEmail', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'userEmail', 'subject', 'message', 'status', 'adminReply', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 200
+        && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 160
+        && data.message is string && data.message.size() > 0 && data.message.size() <= 2000
+        && data.status in ['open', 'in_progress', 'resolved'];
+    }
+
+    // Users collection (PII isolated to owner & admin)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().plan == 'FREE'
+        && (incoming().role == 'user' || (isAdmin() && incoming().role == 'admin'))
+        && incoming().status == 'active'
+        && incoming().credits <= 50
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && (
+          isAdmin() || (
+            isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().plan == existing().plan
+            && incoming().status == existing().status
+            && incoming().credits <= existing().credits
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'displayName', 'photoURL', 'tutorialCompleted', 'tutorialStep',
+              'preferredLanguage', 'watermarkText', 'dailyProjectsUsed',
+              'dailyMinutesUsed', 'storageUsedMb', 'credits', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isAdmin();
+    }
+
+    // Video Projects
+    match /projects/{projectId} {
+      allow get: if isValidId(projectId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(projectId)
+        && isSignedIn()
+        && isValidProject(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(projectId)
+        && isSignedIn()
+        && isValidProject(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && (isOwner(existing().userId) || isAdmin())
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(projectId) && (isOwner(existing().userId) || isAdmin());
+
+      // Clips subcollection with Master Gate parent verification
+      match /clips/{clipId} {
+        allow get: if isValidId(projectId) && isValidId(clipId)
+          && (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || isAdmin());
+        allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+        allow create: if isValidId(projectId) && isValidId(clipId)
+          && isSignedIn()
+          && isValidClip(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().projectId == projectId
+          && exists(/databases/$(database)/documents/projects/$(projectId))
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(projectId) && isValidId(clipId)
+          && isSignedIn()
+          && isValidClip(incoming())
+          && incoming().userId == existing().userId
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || isAdmin())
+          && incoming().updatedAt == request.time;
+        allow delete: if isValidId(projectId) && isValidId(clipId)
+          && (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Export History
+    match /exports/{exportId} {
+      allow get: if isValidId(exportId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(exportId)
+        && isSignedIn()
+        && isValidExport(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin();
+      allow delete: if isValidId(exportId) && (isOwner(existing().userId) || isAdmin());
+    }
+
+    // Payments (Users can create 'pending' intent & submit UTR -> 'awaiting_verification'; ONLY Admin can verify/activate)
+    match /payments/{paymentId} {
+      allow get: if isValidId(paymentId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(paymentId)
+        && isSignedIn()
+        && isValidPayment(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(paymentId)
+        && isValidPayment(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && (
+          isAdmin() || (
+            isOwner(existing().userId)
+            && existing().status == 'pending'
+            && incoming().status == 'awaiting_verification'
+            && incoming().utrNumber is string
+            && incoming().utrNumber.size() >= 8
+            && incoming().utrNumber.size() <= 32
+            && incoming().diff(existing()).affectedKeys().hasOnly(['utrNumber', 'status'])
+          )
+        );
+      allow delete: if isAdmin();
+    }
+
+    // Support Tickets
+    match /tickets/{ticketId} {
+      allow get: if isValidId(ticketId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(ticketId)
+        && isSignedIn()
+        && isValidTicket(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'open'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(ticketId) && isAdmin() && isValidTicket(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Membership Plans (publicly readable, admin editable)
+    match /plans/{planId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Promo Codes (signed-in read, admin write)
+    match /promoCodes/{codeId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Admin markers
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isOwner(uid) || isAdmin());
+      allow list, create, update, delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated CLIPVERSE AI user profile, membership tier, and daily free/pro quotas.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 200 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "plan": { "type": "string", "enum": ["FREE", "STARTER", "PRO", "ULTIMATE", "YEARLY"] },
+        "planExpiresAt": { "type": "string", "maxLength": 64 },
+        "credits": { "type": "number" },
+        "dailyProjectsUsed": { "type": "number" },
+        "dailyMinutesUsed": { "type": "number" },
+        "storageUsedMb": { "type": "number" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "tutorialCompleted": { "type": "boolean" },
+        "tutorialStep": { "type": "number" },
+        "preferredLanguage": { "type": "string", "maxLength": 32 },
+        "watermarkText": { "type": "string", "maxLength": 80 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "plan", "credits", "role", "status", "createdAt", "updatedAt"]
+    },
+    "VideoProject": {
+      "title": "VideoProject",
+      "description": "Uploaded source video project with AI transcript, viral summary, and B-roll suggestions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 180 },
+        "sourceType": { "type": "string", "enum": ["upload", "sample"] },
+        "videoUrl": { "type": "string", "maxLength": 500 },
+        "durationSec": { "type": "number" },
+        "fileSizeMb": { "type": "number" },
+        "aspectRatio": { "type": "string", "enum": ["9:16", "16:9", "1:1"] },
+        "language": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["uploaded", "processing", "ready", "failed"] },
+        "transcript": { "type": "string", "maxLength": 20000 },
+        "viralSummary": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "sourceType", "videoUrl", "durationSec", "status", "createdAt", "updatedAt"]
+    },
+    "VideoClip": {
+      "title": "VideoClip",
+      "description": "AI-detected or manually edited short clip inside a VideoProject.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "startSec": { "type": "number" },
+        "endSec": { "type": "number" },
+        "viralScore": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "category": { "type": "string", "maxLength": 64 },
+        "aspectRatio": { "type": "string", "enum": ["9:16", "16:9", "1:1"] },
+        "captionTemplate": { "type": "string", "maxLength": 64 },
+        "fontStyle": { "type": "string", "maxLength": 64 },
+        "captionColor": { "type": "string", "maxLength": 32 },
+        "captionBg": { "type": "string", "maxLength": 32 },
+        "captionPosition": { "type": "string", "enum": ["bottom", "center", "top"] },
+        "captionSize": { "type": "number" },
+        "silenceRemoved": { "type": "boolean" },
+        "autoZoom": { "type": "boolean" },
+        "audioEnhanced": { "type": "boolean" },
+        "noiseReduced": { "type": "boolean" },
+        "bgRemoved": { "type": "boolean" },
+        "musicTrack": { "type": "string", "maxLength": 80 },
+        "filterName": { "type": "string", "maxLength": 64 },
+        "watermarkEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "projectId", "userId", "title", "startSec", "endSec", "viralScore", "createdAt", "updatedAt"]
+    },
+    "ExportRecord": {
+      "title": "ExportRecord",
+      "description": "Rendered MP4 export history for Shorts, Reels, TikTok, and WhatsApp Status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "clipId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 180 },
+        "platform": { "type": "string", "enum": ["YouTube Shorts", "Instagram Reels", "Facebook Reels", "TikTok", "WhatsApp Status"] },
+        "resolution": { "type": "string", "enum": ["720p", "1080p", "4K"] },
+        "aspectRatio": { "type": "string", "enum": ["9:16", "16:9", "1:1"] },
+        "fileUrl": { "type": "string", "maxLength": 500 },
+        "fileSizeMb": { "type": "number" },
+        "status": { "type": "string", "enum": ["rendering", "completed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "projectId", "clipId", "title", "platform", "resolution", "status", "createdAt"]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "UPI payment intent and server-verified reconciliation record (never stores UPI PIN).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "plan": { "type": "string", "enum": ["STARTER", "PRO", "ULTIMATE", "YEARLY"] },
+        "amountInr": { "type": "number" },
+        "upiApp": { "type": "string", "enum": ["Google Pay", "PhonePe", "Paytm", "Other UPI"] },
+        "referenceId": { "type": "string", "maxLength": 64 },
+        "utrNumber": { "type": "string", "maxLength": 64 },
+        "promoCode": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["pending", "awaiting_verification", "verified", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "plan", "amountInr", "upiApp", "referenceId", "status", "createdAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "User support ticket managed in the Admin Panel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 200 },
+        "subject": { "type": "string", "maxLength": 160 },
+        "message": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved"] },
+        "adminReply": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "userEmail", "subject", "message", "status", "createdAt", "updatedAt"]
+    },
+    "PlatformPlan": {
+      "title": "PlatformPlan",
+      "description": "Membership tier definition editable by admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 32 },
+        "name": { "type": "string", "maxLength": 64 },
+        "priceInr": { "type": "number" },
+        "billingCycle": { "type": "string", "maxLength": 40 },
+        "dailyProjectsLimit": { "type": "number" },
+        "dailyMinutesLimit": { "type": "number" },
+        "storageGb": { "type": "number" },
+        "maxResolution": { "type": "string", "maxLength": 16 }
+      },
+      "required": ["id", "name", "priceInr", "billingCycle"]
+    },
+    "PromoCode": {
+      "title": "PromoCode",
+      "description": "Promotional discount codes managed by admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "code": { "type": "string", "maxLength": 32 },
+        "discountPercent": { "type": "number" },
+        "active": { "type": "boolean" },
+        "usesCount": { "type": "number" }
+      },
+      "required": ["id", "code", "discountPercent", "active"]
+    },
+    "AdminMarker": {
+      "title": "AdminMarker",
+      "description": "Trusted admin role lookup document.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account, quotas, and tutorial progress."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/VideoProject" },
+      "description": "User video projects."
+    },
+    "/projects/{projectId}/clips/{clipId}": {
+      "schema": { "$ref": "#/entities/VideoClip" },
+      "description": "Clips nested under each video project."
+    },
+    "/exports/{exportId}": {
+      "schema": { "$ref": "#/entities/ExportRecord" },
+      "description": "Exported MP4 records."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentRecord" },
+      "description": "UPI payment intents and verified transactions."
+    },
+    "/tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Support tickets submitted by users."
+    },
+    "/plans/{planId}": {
+      "schema": { "$ref": "#/entities/PlatformPlan" },
+      "description": "Public membership plans."
+    },
+    "/promoCodes/{codeId}": {
+      "schema": { "$ref": "#/entities/PromoCode" },
+      "description": "Promotional discount codes."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminMarker" },
+      "description": "Admin authorization markers."
+    }
+  }
+}

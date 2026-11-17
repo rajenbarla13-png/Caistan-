@@ -1,11 +1,34 @@
-<div align="center">
+# CLIPVERSE AI
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Free-first AI video clipping, multilingual captioning, anime font studio, and social media export platform.
 
-  <h1>Built with AI Studio</h2>
+## Architecture
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Motion (`motion/react`), Lucide Icons, Firebase Auth + Cloud Firestore.
+- **Backend**: Node.js + Express (`server.ts`) on port `3000`, `@google/genai` (`gemini-3.5-transcribe`, `gemini-4-hydrogen`, `gemini-3.8-flash-lite-tts`), FFmpeg/FFprobe media pipeline, `qrcode` UPI generator, `firebase-admin`.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Local Development & Production Deployment
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+### Prerequisites
+- Node.js 22+
+- `ffmpeg` and `ffprobe` installed on host (`apt-get install -y ffmpeg`)
+- `GEMINI_API_KEY` set in environment / AI Studio Secrets
 
-</div>
+### Commands
+```bash
+npm install
+npm run dev      # Starts Express + Vite dev middleware on port 3000
+npm run lint     # TypeScript type check
+npm run build    # Builds Vite production bundle to dist/
+npm start        # Runs production server (NODE_ENV=production node server.ts)
+```
+
+## Android APK Build (Capacitor Wrapper)
+```bash
+npm run build
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npx cap init "CLIPVERSE AI" "ai.clipverse.app" --web-dir=dist
+npx cap add android
+npx cap sync android
+cd android && ./gradlew assembleRelease
+```
+Configure `server.url` in `capacitor.config.ts` to point to your deployed Cloud Run HTTPS URL so mobile uploads, FFmpeg processing, and Firebase Auth work seamlessly inside the Android APK.

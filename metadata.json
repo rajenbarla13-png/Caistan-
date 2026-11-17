@@ -1,0 +1,6 @@
+{
+  "name": "CLIPVERSE AI",
+  "description": "Free-first AI video clipping, auto-captions, anime font studio, and social export platform powered by Gemini AI and FFmpeg.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
